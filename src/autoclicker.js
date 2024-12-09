@@ -20,7 +20,7 @@
         if (newContainer !== clickableContainer) {
             clickableContainer = newContainer;
             if (autoClickerOptions.debug) {
-                console.log("Elemento de clic actualizado dinámicamente.");
+                //console.log("Elemento de clic actualizado dinámicamente.");
             }
         }
     });
@@ -29,7 +29,7 @@
     // Simula un clic en un elemento
     function simulateClick(element) {
         if (!element) {
-            console.error("Error: No hay un contenedor válido para realizar el clic.");
+            //console.error("Error: No hay un contenedor válido para realizar el clic.");
             return;
         }
         const rect = element.getBoundingClientRect();
@@ -47,7 +47,7 @@
         });
 
         if (autoClickerOptions.debug) {
-            console.log(`Clic simulado en (${x.toFixed(2)}, ${y.toFixed(2)}).`);
+            //console.log(`Clic simulado en (${x.toFixed(2)}, ${y.toFixed(2)}).`);
         }
     }
 
@@ -60,7 +60,7 @@
                 if (autoClickerInterval) return;
 
                 if (!clickableContainer) {
-                    console.error("Error: Contenedor de clic no encontrado.");
+                    //console.error("Error: Contenedor de clic no encontrado.");
                     return;
                 }
 
@@ -71,7 +71,7 @@
                 badge.textContent = "Activo";
                 badge.classList.remove("bg-secondary");
                 badge.classList.add("bg-success");
-                console.log("Autoclicker activado.");
+                //console.log("Autoclicker activado.");
             } else {
                 if (autoClickerInterval) {
                     clearInterval(autoClickerInterval);
@@ -80,11 +80,11 @@
                     badge.textContent = "Inactivo";
                     badge.classList.remove("bg-success");
                     badge.classList.add("bg-secondary");
-                    console.log("Autoclicker desactivado.");
+                    //console.log("Autoclicker desactivado.");
                 }
             }
         } catch (error) {
-            console.error("Error en toggleAutoClicker: ", error);
+            //console.error("Error en toggleAutoClicker: ", error);
         }
     }
 
@@ -124,13 +124,13 @@
             const newInterval = parseInt(e.target.value, 10);
             if (newInterval >= 10) {
                 autoClickerOptions.interval = newInterval;
-                console.log(`Intervalo actualizado a ${newInterval} ms.`);
+                //console.log(`Intervalo actualizado a ${newInterval} ms.`);
                 if (autoClickerInterval) {
                     toggleAutoClicker(false);
                     toggleAutoClicker(true);
                 }
             } else {
-                console.warn("El intervalo debe ser mayor o igual a 10 ms.");
+                //console.warn("El intervalo debe ser mayor o igual a 10 ms.");
                 e.target.value = autoClickerOptions.interval;
             }
         };
@@ -142,5 +142,5 @@
     // Exporta la función a la ventana global
     window.toggleAutoClicker = toggleAutoClicker;
 
-    console.log("Script cargado. Usa la interfaz para controlar el autoclicker.");
+    //console.log("Script cargado. Usa la interfaz para controlar el autoclicker.");
 })();
