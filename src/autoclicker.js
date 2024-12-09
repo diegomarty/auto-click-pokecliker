@@ -1,90 +1,97 @@
 /**
- * AutoClicker Script Minimalista
+ * AutoClicker Script Optimizado
  *
- * Incluye una interfaz compacta con control para activar/desactivar el autoclicker,
- * ajustar la velocidad de clic y mostrar el estado actual.
+ * Reduce la carga en la aplicación y mejora el rendimiento del clic automático.
  */
 
 (function () {
     let autoClickerInterval = null;
     let clickableContainer = null;
+    let lastClickTime = 0;
 
     const autoClickerOptions = {
         interval: 40, // Intervalo inicial en milisegundos
-        debug: true,  // Mensajes de depuración en consola
+        debug: false, // Mensajes de depuración en consola
     };
 
-    // Detecta cambios en el DOM y actualiza el contenedor dinámicamente
+    // Detecta cambios en el DOM de manera eficiente
     const observer = new MutationObserver(() => {
         const newContainer = document.querySelector("#routeBattleContainer .col.no-gutters.clickable");
-        if (newContainer !== clickableContainer) {
+        if (newContainer && newContainer !== clickableContainer) {
             clickableContainer = newContainer;
             if (autoClickerOptions.debug) {
-                //console.log("Elemento de clic actualizado dinámicamente.");
+                console.log("Elemento de clic actualizado dinámicamente.");
             }
         }
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Simula un clic en un elemento
-    function simulateClick(element) {
-        if (!element) {
-            //console.error("Error: No hay un contenedor válido para realizar el clic.");
-            return;
-        }
+    // Crea eventos de clic reutilizables
+    let precomputedEvents = [];
+    function precomputeEvents(element) {
         const rect = element.getBoundingClientRect();
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
-
-        ["mousedown", "mouseup", "click"].forEach((eventType) => {
-            const event = new MouseEvent(eventType, {
+        precomputedEvents = ["mousedown", "mouseup", "click"].map((eventType) =>
+            new MouseEvent(eventType, {
                 bubbles: true,
                 cancelable: true,
                 clientX: x,
                 clientY: y,
-            });
-            element.dispatchEvent(event);
-        });
+            })
+        );
+    }
 
+    // Simula un clic reutilizando eventos
+    function simulateClick() {
+        if (!clickableContainer) {
+            console.error("Error: No hay un contenedor válido para realizar el clic.");
+            return;
+        }
+        precomputedEvents.forEach((event) => clickableContainer.dispatchEvent(event));
         if (autoClickerOptions.debug) {
-            //console.log(`Clic simulado en (${x.toFixed(2)}, ${y.toFixed(2)}).`);
+            console.log("Clic simulado.");
+        }
+    }
+
+    // Usa requestAnimationFrame para clics más eficientes
+    function autoClickerLoop() {
+        if (autoClickerInterval) {
+            const now = performance.now();
+            if (now - lastClickTime >= autoClickerOptions.interval) {
+                simulateClick();
+                lastClickTime = now;
+            }
+            requestAnimationFrame(autoClickerLoop);
         }
     }
 
     // Activa o desactiva el autoclicker
     function toggleAutoClicker(isActive) {
+        const badge = document.getElementById("autoclicker-badge");
         try {
-            const badge = document.getElementById("autoclicker-badge");
-
             if (isActive) {
-                if (autoClickerInterval) return;
+                if (autoClickerInterval || !clickableContainer) return;
 
-                if (!clickableContainer) {
-                    //console.error("Error: Contenedor de clic no encontrado.");
-                    return;
-                }
-
-                autoClickerInterval = setInterval(() => {
-                    simulateClick(clickableContainer);
-                }, autoClickerOptions.interval);
+                precomputeEvents(clickableContainer);
+                autoClickerInterval = true;
+                lastClickTime = performance.now();
+                requestAnimationFrame(autoClickerLoop);
 
                 badge.textContent = "Activo";
                 badge.classList.remove("bg-secondary");
                 badge.classList.add("bg-success");
-                //console.log("Autoclicker activado.");
+                console.log("Autoclicker activado.");
             } else {
-                if (autoClickerInterval) {
-                    clearInterval(autoClickerInterval);
-                    autoClickerInterval = null;
+                autoClickerInterval = null;
 
-                    badge.textContent = "Inactivo";
-                    badge.classList.remove("bg-success");
-                    badge.classList.add("bg-secondary");
-                    //console.log("Autoclicker desactivado.");
-                }
+                badge.textContent = "Inactivo";
+                badge.classList.remove("bg-success");
+                badge.classList.add("bg-secondary");
+                console.log("Autoclicker desactivado.");
             }
         } catch (error) {
-            //console.error("Error en toggleAutoClicker: ", error);
+            console.error("Error en toggleAutoClicker: ", error);
         }
     }
 
@@ -115,7 +122,6 @@
 
         document.body.appendChild(card);
 
-        // Agrega eventos al botón y al input
         const toggleBtn = document.getElementById("autoclicker-toggle-btn");
         const intervalInput = document.getElementById("autoclicker-interval");
 
@@ -124,13 +130,10 @@
             const newInterval = parseInt(e.target.value, 10);
             if (newInterval >= 10) {
                 autoClickerOptions.interval = newInterval;
-                //console.log(`Intervalo actualizado a ${newInterval} ms.`);
-                if (autoClickerInterval) {
-                    toggleAutoClicker(false);
-                    toggleAutoClicker(true);
+                if (autoClickerOptions.debug) {
+                    console.log(`Intervalo actualizado a ${newInterval} ms.`);
                 }
             } else {
-                //console.warn("El intervalo debe ser mayor o igual a 10 ms.");
                 e.target.value = autoClickerOptions.interval;
             }
         };
@@ -141,6 +144,4 @@
 
     // Exporta la función a la ventana global
     window.toggleAutoClicker = toggleAutoClicker;
-
-    //console.log("Script cargado. Usa la interfaz para controlar el autoclicker.");
 })();
