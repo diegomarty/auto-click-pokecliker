@@ -1,117 +1,69 @@
 /**
- * AutoClicker Script Optimizado
+ * AutoClicker Script
  *
- * Reduce la carga en la aplicación y mejora el rendimiento del clic automático.
+ * Este script permite activar un autoclicker en el juego de forma manual y ajustar el intervalo de clics.
  */
 
 (function () {
     let autoClickerInterval = null;
-    let clickableContainer = null;
-    let lastClickTime = 0;
 
     const autoClickerOptions = {
-        interval: 40, // Intervalo inicial en milisegundos
-        debug: false, // Mensajes de depuración en consola
+        interval: 40, // Intervalo en milisegundos
     };
-
-    // Detecta cambios en el DOM de manera eficiente
-    const observer = new MutationObserver(() => {
-        const newContainer = document.querySelector("#routeBattleContainer .col.no-gutters.clickable");
-        if (newContainer && newContainer !== clickableContainer) {
-            clickableContainer = newContainer;
-            if (autoClickerOptions.debug) {
-                console.log("Elemento de clic actualizado dinámicamente.");
-            }
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    // Crea eventos de clic reutilizables
-    let precomputedEvents = [];
-    function precomputeEvents(element) {
-        const rect = element.getBoundingClientRect();
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
-        precomputedEvents = ["mousedown", "mouseup", "click"].map((eventType) =>
-            new MouseEvent(eventType, {
-                bubbles: true,
-                cancelable: true,
-                clientX: x,
-                clientY: y,
-            })
-        );
-    }
-
-    // Simula un clic reutilizando eventos
-    function simulateClick() {
-        if (!clickableContainer) {
-            console.error("Error: No hay un contenedor válido para realizar el clic.");
-            return;
-        }
-        precomputedEvents.forEach((event) => clickableContainer.dispatchEvent(event));
-        if (autoClickerOptions.debug) {
-            console.log("Clic simulado.");
-        }
-    }
-
-    // Usa requestAnimationFrame para clics más eficientes
-    function autoClickerLoop() {
-        if (autoClickerInterval) {
-            const now = performance.now();
-            if (now - lastClickTime >= autoClickerOptions.interval) {
-                simulateClick();
-                lastClickTime = now;
-            }
-            requestAnimationFrame(autoClickerLoop);
-        }
-    }
 
     // Activa o desactiva el autoclicker
     function toggleAutoClicker(isActive) {
         const badge = document.getElementById("autoclicker-badge");
-        try {
-            if (isActive) {
-                if (autoClickerInterval || !clickableContainer) return;
 
-                precomputeEvents(clickableContainer);
-                autoClickerInterval = true;
-                lastClickTime = performance.now();
-                requestAnimationFrame(autoClickerLoop);
+        if (isActive) {
+            if (autoClickerInterval) return;
 
-                badge.textContent = "Activo";
-                badge.classList.remove("bg-secondary");
-                badge.classList.add("bg-success");
-                console.log("Autoclicker activado.");
-            } else {
+            if (typeof Battle === "undefined" || typeof Battle.clickAttack !== "function") {
+                console.error("Error: No se puede acceder a la función Battle.clickAttack.");
+                return;
+            }
+
+            autoClickerInterval = setInterval(() => {
+                try {
+                    Battle.clickAttack(); // Llama directamente a la función del juego
+                } catch (error) {
+                    console.error("Error al ejecutar Battle.clickAttack:", error);
+                    toggleAutoClicker(false);
+                }
+            }, autoClickerOptions.interval);
+
+            badge.textContent = "Activo";
+            badge.classList.replace("bg-secondary", "bg-success");
+        } else {
+            if (autoClickerInterval) {
+                clearInterval(autoClickerInterval);
                 autoClickerInterval = null;
 
                 badge.textContent = "Inactivo";
-                badge.classList.remove("bg-success");
-                badge.classList.add("bg-secondary");
-                console.log("Autoclicker desactivado.");
+                badge.classList.replace("bg-success", "bg-secondary");
             }
-        } catch (error) {
-            console.error("Error en toggleAutoClicker: ", error);
         }
     }
 
     // Crea la interfaz gráfica compacta
     function createUI() {
         const card = document.createElement("div");
-        card.style.position = "fixed";
-        card.style.bottom = "10px";
-        card.style.right = "10px";
-        card.style.backgroundColor = "#fff";
-        card.style.border = "1px solid #ddd";
-        card.style.borderRadius = "5px";
-        card.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
-        card.style.padding = "5px 10px";
-        card.style.zIndex = "1000";
-        card.style.fontFamily = "Arial, sans-serif";
-        card.style.fontSize = "12px";
-        card.style.display = "flex";
-        card.style.alignItems = "center";
-        card.style.gap = "10px";
+        Object.assign(card.style, {
+            position: "fixed",
+            bottom: "10px",
+            right: "10px",
+            backgroundColor: "#fff",
+            border: "1px solid #ddd",
+            borderRadius: "5px",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+            padding: "5px 10px",
+            zIndex: "1000",
+            fontFamily: "Arial, sans-serif",
+            fontSize: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+        });
 
         card.innerHTML = `
             <span style="font-weight: bold; color: #000;">AutoClicker:</span>
@@ -130,8 +82,9 @@
             const newInterval = parseInt(e.target.value, 10);
             if (newInterval >= 10) {
                 autoClickerOptions.interval = newInterval;
-                if (autoClickerOptions.debug) {
-                    console.log(`Intervalo actualizado a ${newInterval} ms.`);
+                if (autoClickerInterval) {
+                    toggleAutoClicker(false);
+                    toggleAutoClicker(true);
                 }
             } else {
                 e.target.value = autoClickerOptions.interval;
