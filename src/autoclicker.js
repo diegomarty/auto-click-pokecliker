@@ -32,14 +32,14 @@
                 }
             }, autoClickerOptions.interval);
 
-            badge.textContent = "Activo";
+            badge.textContent = "🏃🏻‍♂️";
             badge.classList.replace("bg-secondary", "bg-success");
         } else {
             if (autoClickerInterval) {
                 clearInterval(autoClickerInterval);
                 autoClickerInterval = null;
 
-                badge.textContent = "Inactivo";
+                badge.textContent = "❌";
                 badge.classList.replace("bg-success", "bg-secondary");
             }
         }
@@ -67,7 +67,7 @@
 
         card.innerHTML = `
             <span style="font-weight: bold; color: #000;">AutoClicker:</span>
-            <span id="autoclicker-badge" class="badge bg-secondary" style="padding: 2px 5px; font-size: 10px;">Inactivo</span>
+            <span id="autoclicker-badge" class="badge bg-secondary" style="padding: 2px 5px; font-size: 10px;">❌</span>
             <button id="autoclicker-toggle-btn" class="btn btn-primary" style="padding: 2px 5px; font-size: 10px;">Toggle</button>
             <input id="autoclicker-interval" type="number" class="form-control" value="${autoClickerOptions.interval}" min="10" style="width: 50px; font-size: 10px; padding: 2px;">
         `;
