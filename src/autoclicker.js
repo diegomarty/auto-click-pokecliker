@@ -1,51 +1,66 @@
-/**
- * AutoClicker Script
- *
- * Este script permite activar un autoclicker en el juego de forma manual y ajustar el intervalo de clics.
- */
-
 (function () {
-    let autoClickerInterval = null;
+    let autoClickerActive = false;
+    let lastClickTime = 0;
 
     const autoClickerOptions = {
-        interval: 40, // Intervalo en milisegundos
+        interval: 100, 
     };
 
-    // Activa o desactiva el autoclicker
+    function detectAndClick() {
+        if (!autoClickerActive) return; 
+
+        const currentTime = performance.now();
+        if (currentTime - lastClickTime >= autoClickerOptions.interval) {
+            lastClickTime = currentTime;
+
+            const gameState = App.game.gameState;
+
+            try {
+                if (gameState === GameConstants.GameState.fighting) {
+                    // Vista de ruta
+                    if (typeof Battle.clickAttack === "function") {
+                        Battle.clickAttack();
+                    }
+                } else if (gameState === GameConstants.GameState.gym) {
+                    // Vista de gimnasio
+                    if (typeof GymBattle.clickAttack === "function") {
+                        GymBattle.clickAttack();
+                    }
+                } else if (gameState === GameConstants.GameState.dungeon) {
+                    // Vista de mazmorra
+                    if (typeof DungeonRunner.handleInteraction === "function") {
+                        DungeonRunner.handleInteraction();
+                    }
+                }
+            } catch (error) {
+                console.error("Error al ejecutar la acción de autoclicker:", error);
+                toggleAutoClicker(false);
+            }
+        }
+
+        // Continuar el bucle
+        requestAnimationFrame(detectAndClick);
+    }
+
     function toggleAutoClicker(isActive) {
         const badge = document.getElementById("autoclicker-badge");
 
         if (isActive) {
-            if (autoClickerInterval) return;
+            if (autoClickerActive) return; 
 
-            if (typeof Battle === "undefined" || typeof Battle.clickAttack !== "function") {
-                console.error("Error: No se puede acceder a la función Battle.clickAttack.");
-                return;
-            }
-
-            autoClickerInterval = setInterval(() => {
-                try {
-                    Battle.clickAttack(); // Llama directamente a la función del juego
-                } catch (error) {
-                    console.error("Error al ejecutar Battle.clickAttack:", error);
-                    toggleAutoClicker(false);
-                }
-            }, autoClickerOptions.interval);
-
+            autoClickerActive = true;
             badge.textContent = "🏃🏻‍♂️";
             badge.classList.replace("bg-secondary", "bg-success");
-        } else {
-            if (autoClickerInterval) {
-                clearInterval(autoClickerInterval);
-                autoClickerInterval = null;
 
-                badge.textContent = "❌";
-                badge.classList.replace("bg-success", "bg-secondary");
-            }
+            // Iniciar el loop
+            detectAndClick();
+        } else {
+            autoClickerActive = false;
+            badge.textContent = "❌";
+            badge.classList.replace("bg-success", "bg-secondary");
         }
     }
 
-    // Crea la interfaz gráfica compacta
     function createUI() {
         const card = document.createElement("div");
         Object.assign(card.style, {
@@ -74,27 +89,23 @@
 
         document.body.appendChild(card);
 
-        const toggleBtn = document.getElementById("autoclicker-toggle-btn");
-        const intervalInput = document.getElementById("autoclicker-interval");
+        document
+            .getElementById("autoclicker-toggle-btn")
+            .addEventListener("click", () => toggleAutoClicker(!autoClickerActive));
 
-        toggleBtn.onclick = () => toggleAutoClicker(!autoClickerInterval);
-        intervalInput.onchange = (e) => {
-            const newInterval = parseInt(e.target.value, 10);
-            if (newInterval >= 10) {
-                autoClickerOptions.interval = newInterval;
-                if (autoClickerInterval) {
-                    toggleAutoClicker(false);
-                    toggleAutoClicker(true);
+        document
+            .getElementById("autoclicker-interval")
+            .addEventListener("change", (e) => {
+                const newInterval = parseInt(e.target.value, 10);
+                if (newInterval >= 10) {
+                    autoClickerOptions.interval = newInterval;
+                } else {
+                    e.target.value = autoClickerOptions.interval;
                 }
-            } else {
-                e.target.value = autoClickerOptions.interval;
-            }
-        };
+            });
     }
 
-    // Inicializa la interfaz
     createUI();
 
-    // Exporta la función a la ventana global
     window.toggleAutoClicker = toggleAutoClicker;
 })();
