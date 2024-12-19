@@ -1,84 +1,67 @@
 # AutoClicker Script
 
-Un script de autoclick diseñado para juegos de navegador que simula clics automáticos sobre un elemento específico. Compatible con navegadores en escritorio, iOS y Android.
+A versatile autoclicker script designed for browser-based games, enabling automatic clicks on specific webpage elements. Compatible with desktop browsers as well as iOS and Android devices.
 
-## Características
+## Key Features
 
-- Simulación de clics automáticos en un elemento del DOM.
-- Control de activación/desactivación mediante un botón flotante o teclas de acceso rápido.
-- Ajuste dinámico del intervalo de clic.
-- Indicador de estado (activo/inactivo).
-- Compatibilidad con navegadores móviles (iOS y Android).
+- **Automated Clicks:** Continuously simulates clicks on a chosen DOM element.  
+- **Easy Activation/Deactivation:** Use a floating control button or keyboard shortcuts to quickly enable or disable the autoclicker.  
+- **Adjustable Intervals:** Dynamically change the click frequency to suit your needs.  
+- **Visual Status Indicator:** Instantly see whether the autoclicker is active or inactive.  
+- **Multi-Platform Support:** Works smoothly on desktop browsers and mobile browsers (iOS and Android).
 
-## Cómo usar
+## How to Use
 
-### **En Escritorio**
-1. Abre el navegador de tu elección (Chrome, Firefox, Edge, etc.).
-2. Accede al juego donde quieres usar el autoclicker.
-3. Abre la consola del navegador:
-   - En Windows/Linux: `Ctrl + Shift + J`.
-   - En Mac: `Cmd + Option + J`.
-4. Pega el contenido del script en la consola y presiona Enter.
-5. Usa la interfaz flotante para activar/desactivar el autoclicker y ajustar el intervalo.
+### Desktop
 
----
+1. Open your preferred browser (Chrome, Firefox, Edge, etc.).
+2. Navigate to the game where you want to use the autoclicker.
+3. Open the browser console:
+   - Windows/Linux: `Ctrl + Shift + J`
+   - macOS: `Cmd + Option + J`
+4. Paste the script into the console and press Enter.
+5. Use the floating interface to turn the autoclicker on/off and adjust the interval as needed.
 
-### **En iOS**
+### iOS
 
-#### Opción 1: Usando Safari y un Bookmarklet
-1. Abre Safari en tu dispositivo iOS.
-2. Crea un marcador para cualquier página (por ejemplo, `google.com`).
-3. Edita el marcador desde tus favoritos:
-   - Cambia su nombre a "AutoClicker".
-   - Reemplaza la URL con el contenido del archivo `movile-autoclicker.js` convertido en una línea:
-     ```javascript
-     javascript:(function(){/* TU SCRIPT INLINE */})();
-     ```
-4. Abre el juego en Safari.
-5. Desde los favoritos, selecciona "AutoClicker" para ejecutar el script.
+**Option 1: Bookmarklet in Safari**
+1. In Safari, create a bookmark for any page.
+2. Edit the bookmark:
+   - Rename it to "AutoClicker".
+   - Replace the URL with the single-line `javascript:` version of the script.
+3. Open the game in Safari.
+4. Tap the "AutoClicker" bookmark to run the script.
 
-#### Opción 2: Usando una App con Consola JavaScript
-1. Descarga una aplicación como:
-   - [iCab Mobile](https://apps.apple.com/app/icab-mobile/id308111628)
-   - [Inspect Browser](https://apps.apple.com/app/inspect-browser/id1372526347)
-2. Abre el juego dentro de la app.
-3. Usa la consola JavaScript de la app para pegar el contenido de `movile-autoclicker.js` y ejecutarlo.
+**Option 2: JavaScript Console Apps**
+1. Install an app with a JavaScript console, such as [iCab Mobile](https://apps.apple.com/app/icab-mobile/id308111628) or [Inspect Browser](https://apps.apple.com/app/inspect-browser/id1372526347).
+2. Open the game in the app.
+3. Paste and execute the `movile-autoclicker.js` content in the built-in console.
 
----
+### Android
 
-### **En Android**
+**Option 1: Bookmarklet in Chrome/Firefox**
+1. Create a bookmark for any page (e.g., `google.com`).
+2. Edit the bookmark:
+   - Name it "AutoClicker".
+   - Replace the URL with the single-line `javascript:` version of `movile-autoclicker.js`.
+3. Open the game in your browser.
+4. Select the "AutoClicker" bookmark to run the script.
 
-#### Opción 1: Usando Chrome o Firefox con Bookmarklet
-1. Abre Chrome o Firefox en tu dispositivo Android.
-2. Crea un marcador para cualquier página (por ejemplo, `google.com`).
-3. Edita el marcador:
-   - Cambia su nombre a "AutoClicker".
-   - Reemplaza la URL con el contenido del archivo `movile-autoclicker.js` convertido en una línea:
-     ```javascript
-     javascript:(function(){/* TU SCRIPT INLINE */})();
-     ```
-4. Abre el juego en tu navegador.
-5. Selecciona "AutoClicker" desde los marcadores para ejecutar el script.
+**Option 2: Browsers with Integrated Consoles**
+1. Install a browser with console support, such as [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) (supports Chrome extensions) or [Firefox Developer Edition](https://play.google.com/store/apps/details?id=org.mozilla.fenix).
+2. Open the game in that browser.
+3. Paste and execute `movile-autoclicker.js` in the integrated console.
 
-#### Opción 2: Usando Navegadores con Consola Integrada
-1. Descarga navegadores como:
-   - [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) (compatible con extensiones de Chrome).
-   - [Firefox Developer Edition](https://play.google.com/store/apps/details?id=org.mozilla.fenix).
-2. Abre el juego en el navegador.
-3. Usa la consola integrada para pegar el contenido de `movile-autoclicker.js` y ejecutarlo.
+## `movile-autoclicker.js` File
 
----
+The [movile-autoclicker.js](./movile-autoclicker.js) file provides a compact, mobile-friendly version of the script, suitable for use as a bookmarklet or direct console injection in mobile browsers.
 
-## Archivo `movile-autoclicker.js`
+## Code and Contributions
 
-El script inline está diseñado para ser compacto y ejecutable en navegadores móviles. Puedes encontrarlo en el archivo [movile-autoclicker.js](./movile-autoclicker.js).
+You can find the complete source code here: [https://github.com/diegomarty/auto-click-pokecliker](https://github.com/diegomarty/auto-click-pokecliker)
 
----
+Suggestions and improvements are welcome. Feel free to open an issue or submit a pull request.
 
-## Contribuciones
+## License
 
-Las contribuciones son bienvenidas. Por favor, abre un "issue" o envía un "pull request" para sugerencias o mejoras.
-
-## Licencia
-
-Este proyecto está licenciado bajo la [MIT License](LICENSE).
+While not strictly necessary, including a license is highly recommended for public projects. You may choose the MIT License or another open-source license that meets your needs.
