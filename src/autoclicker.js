@@ -2,6 +2,7 @@
     let autoQueueActive = false;
     let autoClickerActive = false;
     let autoDungeonActive = false;
+    let autoDungeonTreasurePriorityActive = false;
 
     let clickerRunning = false;
     let lastClickTime = 0;
@@ -13,7 +14,7 @@
         checkInterval: 2000,
         modalLoadTime: 500,
         maxModalCloseRetries: 5,
-        modalCloseRetryInterval: 500
+        modalCloseRetryInterval: 500,
     };
 
     const autoClickerOptions = {
@@ -23,25 +24,13 @@
     };
 
     const autoDungeonOptions = {
-        checkInterval: 100
+        checkInterval: 100,
     };
 
     let clickCount = 0;
     let isPaused = false;
 
     // ======================= Funciones AutoQueue =======================
-
-    async function ensureModalClosed(retryCount = 0) {
-        if (typeof BreedingController.isModalOpen === 'function' && BreedingController.isModalOpen()) {
-            if (retryCount < autoQueueOptions.maxModalCloseRetries) {
-                BreedingController.closeBreedingModal();
-                await new Promise((resolve) => setTimeout(resolve, autoQueueOptions.modalCloseRetryInterval));
-                return ensureModalClosed(retryCount + 1);
-            } else {
-                console.warn("No se pudo cerrar el modal tras varios intentos.");
-            }
-        }
-    }
 
     async function autoFillQueue() {
         if (!autoQueueActive) return;
@@ -70,20 +59,10 @@
                     }
                 }
 
-                if (App.game.breeding.queueList().length >= maxQueueSlots) {
-                    BreedingController.closeBreedingModal();
-                    await ensureModalClosed();
-                } else {
-                    if (typeof BreedingController.isModalOpen === 'function' && BreedingController.isModalOpen()) {
-                        BreedingController.closeBreedingModal();
-                        await ensureModalClosed();
-                    }
-                }
+                // Usamos jQuery solo para los modals:
+                $('#breedingModal').modal('hide');
             } else {
-                if (typeof BreedingController.isModalOpen === 'function' && BreedingController.isModalOpen()) {
-                    BreedingController.closeBreedingModal();
-                    await ensureModalClosed();
-                }
+                $('#breedingModal').modal('hide');
             }
         } catch (error) {
             console.error("Error en la automatización de la cola:", error);
@@ -92,9 +71,7 @@
 
     function startAutoQueue() {
         if (autoQueueIntervalId) return;
-        autoQueueIntervalId = setInterval(() => {
-            autoFillQueue();
-        }, autoQueueOptions.checkInterval);
+        autoQueueIntervalId = setInterval(autoFillQueue, autoQueueOptions.checkInterval);
     }
 
     function stopAutoQueue() {
@@ -126,6 +103,8 @@
                     GymBattle.clickAttack();
                 } else if (gameState === GameConstants.GameState.dungeon && typeof DungeonRunner.handleInteraction === "function") {
                     DungeonRunner.handleInteraction();
+                } else if (gameState === GameConstants.GameState.temporaryBattle && typeof TemporaryBattleBattle.clickAttack === "function") {
+                    TemporaryBattleBattle.clickAttack();
                 }
             } catch (error) {
                 console.error("Error al ejecutar la acción de autoclicker:", error);
@@ -139,7 +118,7 @@
                     isPaused = false;
                     clickCount = 0;
                     if (autoClickerActive) {
-                        lastClickTime = performance.now(); 
+                        lastClickTime = performance.now();
                         clickLoopId = requestAnimationFrame(clickLoop);
                     } else {
                         clickerRunning = false;
@@ -166,15 +145,15 @@
     // ======================= Funciones AutoDungeon =======================
 
     function inDungeon() {
-        if (typeof DungeonRunner === 'undefined') return false;
+        if (typeof DungeonRunner === "undefined") return false;
         if (!DungeonRunner.dungeon) return false;
-        if (typeof DungeonRunner.dungeonFinished !== 'function') return false;
+        if (typeof DungeonRunner.dungeonFinished !== "function") return false;
         if (DungeonRunner.dungeonFinished()) return false;
         if (!DungeonRunner.map) return false;
-        if (typeof DungeonRunner.map.playerPosition !== 'function') return false;
+        if (typeof DungeonRunner.map.playerPosition !== "function") return false;
         const pos = DungeonRunner.map.playerPosition();
         if (!pos) return false;
-        const dungeonMapElement = document.getElementById('dungeonMap');
+        const dungeonMapElement = document.getElementById("dungeonMap");
         if (!dungeonMapElement) return false;
         return true;
     }
@@ -186,7 +165,7 @@
 
     function getBoard() {
         const pos = getPlayerPosition();
-        if (!pos || !DungeonRunner.map || typeof DungeonRunner.map.board !== 'function') {
+        if (!pos || !DungeonRunner.map || typeof DungeonRunner.map.board !== "function") {
             return null;
         }
         const board = DungeonRunner.map.board()[pos.floor];
@@ -203,13 +182,30 @@
             for (let x = 0; x < board[y].length; x++) {
                 const tile = board[y][x];
                 if (!tile) continue;
-                const tileType = typeof tile.type === 'function' ? tile.type() : tile.type;
+                const tileType = typeof tile.type === "function" ? tile.type() : tile.type;
                 if (tileType === type) {
                     return { x, y, floor: pos.floor };
                 }
             }
         }
         return null;
+    }
+
+    function getAllTilesByType(board, type) {
+        const pos = getPlayerPosition();
+        if (!pos) return [];
+        const tiles = [];
+        for (let y = 0; y < board.length; y++) {
+            for (let x = 0; x < board[y].length; x++) {
+                const tile = board[y][x];
+                if (!tile) continue;
+                const tileType = typeof tile.type === "function" ? tile.type() : tile.type;
+                if (tileType === type) {
+                    tiles.push({ x, y, floor: pos.floor });
+                }
+            }
+        }
+        return tiles;
     }
 
     function getUnexploredTiles(board) {
@@ -219,14 +215,12 @@
         for (let y = 0; y < board.length; y++) {
             for (let x = 0; x < board[y].length; x++) {
                 const tile = board[y][x];
-                if (!tile || tile.isVisited) {
-                    continue;
-                }
+                if (!tile || tile.isVisited) continue;
                 let cssClassValue = tile.cssClass;
-                if (typeof cssClassValue === 'function') {
+                if (typeof cssClassValue === "function") {
                     cssClassValue = cssClassValue();
                 }
-                if (typeof cssClassValue === 'string' && !cssClassValue.includes('tile-invisible')) {
+                if (typeof cssClassValue === "string" && !cssClassValue.includes("tile-invisible")) {
                     tiles.push({ x, y, floor: pos.floor });
                 }
             }
@@ -235,21 +229,17 @@
     }
 
     function moveAlongPath(path) {
-        if (!path || path.length === 0) {
-            return false;
-        }
-    
+        if (!path || path.length === 0) return false;
+
         const pos = getPlayerPosition();
         const nextStep = path[0];
-    
+
         if (pos && pos.x === nextStep.x && pos.y === nextStep.y && pos.floor === nextStep.floor) {
             return false;
         }
-    
+
         const moved = DungeonRunner.map.moveToTile(nextStep);
-        if (!moved) {
-            return false;
-        }
+        if (!moved) return false;
         return true;
     }
 
@@ -260,10 +250,8 @@
     }
 
     function simulateInteractionClick() {
-        const dungeonArea = document.querySelector('.battle-view.card-body');
-        if (dungeonArea) {
-            dungeonArea.click();
-        }
+        const dungeonArea = document.querySelector(".battle-view.card-body");
+        if (dungeonArea) dungeonArea.click();
     }
 
     function startDungeonIfButtonExists() {
@@ -277,26 +265,46 @@
 
     function autoDungeonAction() {
         if (!autoDungeonActive) return;
-    
+
         if (!inDungeon()) {
-            const started = startDungeonIfButtonExists();
+            startDungeonIfButtonExists();
             return;
         }
-    
+
         const pos = getPlayerPosition();
         if (!pos) return;
-    
+
         const board = getBoard();
         if (!board) return;
-    
+
+        let movedSuccessfully = false;
+
+        // Prioridad tesoros
+        if (autoDungeonTreasurePriorityActive) {
+            const chestTiles = getAllTilesByType(board, GameConstants.DungeonTileType.chest);
+            if (chestTiles.length > 0) {
+                let shortestPath = null;
+                let shortestDistance = Infinity;
+                for (const tile of chestTiles) {
+                    const path = DungeonRunner.map.findShortestPath(pos, tile);
+                    if (path && path.length < shortestDistance) {
+                        shortestDistance = path.length;
+                        shortestPath = path;
+                    }
+                }
+                if (shortestPath) {
+                    movedSuccessfully = moveAlongPath(shortestPath);
+                    if (movedSuccessfully) return;
+                }
+            }
+        }
+
+        // Boss o ladder
         const bossPos = findTileByType(board, GameConstants.DungeonTileType.boss);
         const ladderPos = findTileByType(board, GameConstants.DungeonTileType.ladder);
-    
-        let movedSuccessfully = false;
-    
-        if (bossPos || ladderPos) {
+
+        if (!movedSuccessfully && (bossPos || ladderPos)) {
             const target = bossPos || ladderPos;
-    
             let path = DungeonRunner.map.findShortestPath(pos, target, [GameConstants.DungeonTileType.enemy]);
             if (!path || path.length === 0) {
                 path = DungeonRunner.map.findShortestPath(pos, target);
@@ -304,9 +312,10 @@
             if (path && path.length > 0) {
                 movedSuccessfully = moveAlongPath(path);
                 if (movedSuccessfully) return;
-            } 
+            }
         }
-    
+
+        // Celdas no exploradas
         const unexplored = getUnexploredTiles(board);
         if (!movedSuccessfully && unexplored.length > 0) {
             let shortestPath = null;
@@ -323,16 +332,14 @@
                 if (movedSuccessfully) return;
             }
         }
-    
+
         simulateInteractionClick();
-    
-        if (!movedSuccessfully && typeof DungeonRunner.map.nearbyTiles === 'function') {
+
+        if (!movedSuccessfully && typeof DungeonRunner.map.nearbyTiles === "function") {
             const nearbyTiles = DungeonRunner.map.nearbyTiles(pos);
             if (nearbyTiles && nearbyTiles.length > 0) {
                 const randomTile = pickRandomTile(nearbyTiles);
-                if (randomTile) {
-                    moveAlongPath([randomTile.position]);
-                }
+                if (randomTile) moveAlongPath([randomTile.position]);
             }
         }
     }
@@ -354,10 +361,10 @@
     function updateAccordionTitle() {
         const accordionTitle = document.getElementById("automation-accordion-title");
         if (!accordionTitle) return;
-    
-        const Q = autoQueueActive ? 'Q✅' : 'Q❌';
-        const C = autoClickerActive ? 'C✅' : 'C❌';
-        const D = autoDungeonActive ? 'D✅' : 'D❌';
+
+        const Q = autoQueueActive ? "H✅" : "H❌";
+        const C = autoClickerActive ? "C✅" : "C❌";
+        const D = autoDungeonActive ? "D✅" : "D❌";
         accordionTitle.textContent = `⚙️: ${Q} | ${C} | ${D}`;
     }
 
@@ -366,11 +373,11 @@
         const queueButton = document.getElementById("autoqueue-toggle-btn");
 
         if (isActive) {
-            queueButton.textContent = "Queue: ON";
+            queueButton.textContent = "Hatchery: ON";
             queueButton.classList.replace("btn-secondary", "btn-success");
             startAutoQueue();
         } else {
-            queueButton.textContent = "Queue: OFF";
+            queueButton.textContent = "Hatchery: OFF";
             queueButton.classList.replace("btn-success", "btn-secondary");
             stopAutoQueue();
         }
@@ -393,7 +400,7 @@
             clickerButton.classList.replace("btn-success", "btn-secondary");
 
             autoClickerActive = false;
-            isPaused = false; 
+            isPaused = false;
             clickCount = 0;
             if (clickLoopId) {
                 cancelAnimationFrame(clickLoopId);
@@ -422,7 +429,11 @@
         updateAccordionTitle();
     }
 
-    // ======================= Interfaz (Acordeón) =======================
+    function toggleDungeonTreasurePriority(isActive) {
+        autoDungeonTreasurePriorityActive = isActive;
+    }
+
+    // ======================= Interfaz (Acordeón + Modal Info) =======================
 
     function createUI() {
         const container = document.createElement("div");
@@ -439,57 +450,63 @@
             width: "160px",
             zIndex: "1000",
         });
-    
-        // Acordeón header
+
         const header = document.createElement("div");
         Object.assign(header.style, {
-            backgroundColor: "#6200ea", // un púrpura agradable
-            color: "#ffffff", // texto en blanco para contraste
+            backgroundColor: "#6200ea",
+            color: "#ffffff",
             borderRadius: "8px 8px 0 0",
             padding: "5px",
             cursor: "pointer",
             textAlign: "center",
             fontWeight: "bold",
-            fontSize: "14px"
+            fontSize: "14px",
         });
         header.id = "automation-accordion-title";
-        header.textContent = "⚙️: Q❌ | C❌ | D❌";
-    
+        header.textContent = "⚙️: H❌ | C❌ | D❌";
+
         const content = document.createElement("div");
         Object.assign(content.style, {
             display: "none",
             flexDirection: "column",
             gap: "5px",
-            padding: "8px"
+            padding: "8px",
         });
-    
+
         content.innerHTML = `
-            <button id="autoqueue-toggle-btn" class="btn btn-secondary btn-sm w-100">Queue: OFF</button>
+            <button id="autoqueue-toggle-btn" class="btn btn-secondary btn-sm w-100">Hatchery: OFF</button>
             <button id="autoclicker-toggle-btn" class="btn btn-secondary btn-sm w-100">Clicker: OFF</button>
+            <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                <input type="checkbox" id="autodungeon-treasure" />
+                <label for="autodungeon-treasure" style="margin:0;" class="text-secondary">Prioritize treasure</label>
+            </div>
             <button id="autodungeon-toggle-btn" class="btn btn-secondary btn-sm w-100">Dungeon: OFF</button>
             <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
-                <label for="autoclicker-interval" style="margin: 0;">Interval:</label>
+                <label for="autoclicker-interval" style="margin: 0;" class="text-secondary">Interval:</label>
                 <input id="autoclicker-interval" type="number" class="form-control form-control-sm w-100" value="${autoClickerOptions.interval}" min="10" step="10">
             </div>
+            <div style="text-align: right;">
+                <a href="#" id="more-info-link" style="font-size:10px; color: #6c757d;">More info</a>
+            </div>
         `;
-    
-        header.addEventListener('click', () => {
+
+        header.addEventListener("click", () => {
             content.style.display = (content.style.display === "none") ? "flex" : "none";
         });
-    
+
         container.appendChild(header);
         container.appendChild(content);
         document.body.appendChild(container);
-    
+
         document.getElementById("autoqueue-toggle-btn")
             .addEventListener("click", () => toggleAutoQueue(!autoQueueActive));
-    
+
         document.getElementById("autoclicker-toggle-btn")
             .addEventListener("click", () => toggleAutoClicker(!autoClickerActive));
-    
+
         document.getElementById("autodungeon-toggle-btn")
             .addEventListener("click", () => toggleAutoDungeon(!autoDungeonActive));
-    
+
         document.getElementById("autoclicker-interval")
             .addEventListener("change", (e) => {
                 const newInterval = parseInt(e.target.value, 10);
@@ -499,6 +516,45 @@
                     e.target.value = autoClickerOptions.interval;
                 }
             });
+
+        document.getElementById("autodungeon-treasure")
+            .addEventListener("change", (e) => toggleDungeonTreasurePriority(e.target.checked));
+
+        // Botón de más información
+        document.getElementById("more-info-link").addEventListener("click", (e) => {
+            e.preventDefault();
+            $('#infoModal').modal('show');
+        });
+
+        // Crear modal con información adicional (en inglés)
+        const infoModal = document.createElement('div');
+        infoModal.innerHTML = `
+            <div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="infoModalLabel">Automation Features</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="font-size:14px;">
+                        <p><strong>Auto Hatchery (H):</strong> It's best to list Pokémon by breeding efficiency, so you hatch the most optimal eggs first.</p>
+                        <p><strong>Auto Clicker (C):</strong> We do not recommend decreasing the click interval below 100ms as it may cause performance issues. Keep it at 100ms or above for stability.</p>
+                        <p><strong>Auto Dungeon (D):</strong> Prioritizing treasure first can be beneficial, as it often yields extra rewards. Then proceed towards the boss or unexplored areas.</p>
+                        <p><strong>Additional Tips:</strong><br>
+                        - Always ensure you have enough resources before starting these automations.<br>
+                        - Monitor performance when lowering intervals or activating multiple features.</p>
+                        <p>Code can be found here: <a href="https://github.com/diegomarty/auto-click-pokecliker" target="_blank">GitHub</a>. Suggestions and improvements are welcome!</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
+                    </div>
+                    </div>
+                </div>
+            </div>`;
+
+        document.body.appendChild(infoModal);
     }
 
     createUI();
