@@ -61,7 +61,3 @@ The [movile-autoclicker.js](./movile-autoclicker.js) file provides a compact, mo
 You can find the complete source code here: [https://github.com/diegomarty/auto-click-pokecliker](https://github.com/diegomarty/auto-click-pokecliker)
 
 Suggestions and improvements are welcome. Feel free to open an issue or submit a pull request.
-
-## License
-
-While not strictly necessary, including a license is highly recommended for public projects. You may choose the MIT License or another open-source license that meets your needs.
