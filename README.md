@@ -35,7 +35,7 @@ A versatile autoclicker script designed for browser-based games, enabling automa
 **Option 2: JavaScript Console Apps**
 1. Install an app with a JavaScript console, such as [iCab Mobile](https://apps.apple.com/app/icab-mobile/id308111628) or [Inspect Browser](https://apps.apple.com/app/inspect-browser/id1372526347).
 2. Open the game in the app.
-3. Paste and execute the `movile-autoclicker.js` content in the built-in console.
+3. Paste and execute the `autoclicker.min.js` content in the built-in console.
 
 ### Android
 
@@ -43,18 +43,18 @@ A versatile autoclicker script designed for browser-based games, enabling automa
 1. Create a bookmark for any page (e.g., `google.com`).
 2. Edit the bookmark:
    - Name it "AutoClicker".
-   - Replace the URL with the single-line `javascript:` version of `movile-autoclicker.js`.
+   - Replace the URL with the single-line `javascript:` version of `autoclicker.min.js`.
 3. Open the game in your browser.
 4. Select the "AutoClicker" bookmark to run the script.
 
 **Option 2: Browsers with Integrated Consoles**
 1. Install a browser with console support, such as [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) (supports Chrome extensions) or [Firefox Developer Edition](https://play.google.com/store/apps/details?id=org.mozilla.fenix).
 2. Open the game in that browser.
-3. Paste and execute `movile-autoclicker.js` in the integrated console.
+3. Paste and execute `autoclicker.min.js` in the integrated console.
 
-## `movile-autoclicker.js` File
+## `autoclicker.min.js` File
 
-The [movile-autoclicker.js](./movile-autoclicker.js) file provides a compact, mobile-friendly version of the script, suitable for use as a bookmarklet or direct console injection in mobile browsers.
+The [autoclicker.min.js](./autoclicker.min.js) file provides a compact, mobile-friendly version of the script, suitable for use as a bookmarklet or direct console injection in mobile browsers.
 
 ## Code and Contributions
 
