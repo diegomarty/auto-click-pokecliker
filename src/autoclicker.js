@@ -3,12 +3,14 @@
     let autoClickerActive = false;
     let autoDungeonActive = false;
     let autoDungeonTreasurePriorityActive = false;
+    let autoMiningActive = false; 
 
     let clickerRunning = false;
     let lastClickTime = 0;
     let clickLoopId = null;
     let autoQueueIntervalId = null;
     let autoDungeonIntervalId = null;
+    let autoMiningIntervalId = null;
 
     const autoQueueOptions = {
         checkInterval: 2000,
@@ -24,6 +26,10 @@
     };
 
     const autoDungeonOptions = {
+        checkInterval: 100,
+    };
+
+    const autoMiningOptions = {
         checkInterval: 100,
     };
 
@@ -356,16 +362,63 @@
         }
     }
 
+    // ======================= NUEVO: Funciones AutoMining =======================
+
+    function autoMiningAction() {
+        // Si no está activo, no hacemos nada
+        if (!autoMiningActive) return;
+
+        // Chequear si hay una mina activa
+        const currentMine = App.game.underground.mine;
+        if (!currentMine || currentMine.completed) {
+            // No generamos nueva mina, el usuario se encargará
+            return;
+        }
+
+        // Seleccionar la herramienta Bomb, asumiendo que tenemos usos infinitos
+        // ID 2 es Bomb (Chisel=0, Hammer=1, Bomb=2, Survey=3 en la mayoría de versiones)
+        App.game.underground.tools.selectedToolType = UndergroundToolType.Bomb;
+
+        // Tomar todos los .mineSquare
+        const mineSquares = document.querySelectorAll('#mineBody .mineSquare');
+        if (!mineSquares?.length) return;
+
+        // Iteramos cada .mineSquare y simulamos un mouseDown, 
+        // que es lo que el juego escucha para excavar
+        mineSquares.forEach(square => {
+            // Verificamos si la mina sigue activa y no se completó en medio de la iteración
+            if (!App.game.underground.mine || App.game.underground.mine.completed) {
+                return;
+            }
+            // Disparamos el evento para usar Bomb en esa celda
+            square.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        });
+    }
+
+    function startAutoMining() {
+        if (autoMiningIntervalId) return;
+        autoMiningIntervalId = setInterval(autoMiningAction, autoMiningOptions.checkInterval);
+    }
+
+    function stopAutoMining() {
+        if (autoMiningIntervalId) {
+            clearInterval(autoMiningIntervalId);
+            autoMiningIntervalId = null;
+        }
+    }
+
     // ======================= Toggles =======================
 
     function updateAccordionTitle() {
         const accordionTitle = document.getElementById("automation-accordion-title");
         if (!accordionTitle) return;
 
-        const Q = autoQueueActive ? "H✅" : "H❌";
+        const H = autoQueueActive ? "H✅" : "H❌";
         const C = autoClickerActive ? "C✅" : "C❌";
         const D = autoDungeonActive ? "D✅" : "D❌";
-        accordionTitle.textContent = `⚙️: ${Q} | ${C} | ${D}`;
+        const M = autoMiningActive ? "M✅" : "M❌";
+
+        accordionTitle.textContent = `⚙️: ${H} | ${C} | ${D} | ${M}`;
     }
 
     function toggleAutoQueue(isActive) {
@@ -433,6 +486,22 @@
         autoDungeonTreasurePriorityActive = isActive;
     }
 
+    function toggleAutoMining(isActive) {
+        autoMiningActive = isActive;
+        const miningButton = document.getElementById("automining-toggle-btn");
+
+        if (isActive) {
+            miningButton.textContent = "Mining: ON";
+            miningButton.classList.replace("btn-secondary", "btn-success");
+            startAutoMining();
+        } else {
+            miningButton.textContent = "Mining: OFF";
+            miningButton.classList.replace("btn-success", "btn-secondary");
+            stopAutoMining();
+        }
+        updateAccordionTitle();
+    }
+
     // ======================= Interfaz (Acordeón + Modal Info) =======================
 
     function createUI() {
@@ -447,10 +516,10 @@
             boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
             fontFamily: "Arial, sans-serif",
             fontSize: "12px",
-            width: "160px",
-            zIndex: "1000",
+            width: "200px",
+            zIndex: "2000",
         });
-
+    
         const header = document.createElement("div");
         Object.assign(header.style, {
             backgroundColor: "#6200ea",
@@ -462,9 +531,10 @@
             fontWeight: "bold",
             fontSize: "14px",
         });
-        header.id = "automation-accordion-title";
-        header.textContent = "⚙️: H❌ | C❌ | D❌";
 
+        header.id = "automation-accordion-title";
+        header.textContent = "⚙️: H❌ | C❌ | D❌ | M❌";
+    
         const content = document.createElement("div");
         Object.assign(content.style, {
             display: "none",
@@ -472,41 +542,45 @@
             gap: "5px",
             padding: "8px",
         });
-
+    
         content.innerHTML = `
-            <button id="autoqueue-toggle-btn" class="btn btn-secondary btn-sm w-100">Hatchery: OFF</button>
             <button id="autoclicker-toggle-btn" class="btn btn-secondary btn-sm w-100">Clicker: OFF</button>
+            <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                <label for="autoclicker-interval" style="margin: 0;" class="text-secondary">Interval:</label>
+                <input id="autoclicker-interval" type="number" class="form-control form-control-sm w-100" value="${autoClickerOptions.interval}" min="10" step="10">
+            </div>
+            <button id="autoqueue-toggle-btn" class="btn btn-secondary btn-sm w-100">Hatchery: OFF</button>
             <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
                 <input type="checkbox" id="autodungeon-treasure" />
                 <label for="autodungeon-treasure" style="margin:0;" class="text-secondary">Prioritize treasure</label>
             </div>
             <button id="autodungeon-toggle-btn" class="btn btn-secondary btn-sm w-100">Dungeon: OFF</button>
-            <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
-                <label for="autoclicker-interval" style="margin: 0;" class="text-secondary">Interval:</label>
-                <input id="autoclicker-interval" type="number" class="form-control form-control-sm w-100" value="${autoClickerOptions.interval}" min="10" step="10">
-            </div>
+            <button id="automining-toggle-btn" class="btn btn-secondary btn-sm w-100">Mining: OFF</button>
             <div style="text-align: right;">
                 <a href="#" id="more-info-link" style="font-size:10px; color: #6c757d;">More info</a>
             </div>
         `;
-
+    
         header.addEventListener("click", () => {
             content.style.display = (content.style.display === "none") ? "flex" : "none";
         });
-
+    
         container.appendChild(header);
         container.appendChild(content);
         document.body.appendChild(container);
-
+    
         document.getElementById("autoqueue-toggle-btn")
             .addEventListener("click", () => toggleAutoQueue(!autoQueueActive));
-
+    
         document.getElementById("autoclicker-toggle-btn")
             .addEventListener("click", () => toggleAutoClicker(!autoClickerActive));
-
+    
         document.getElementById("autodungeon-toggle-btn")
             .addEventListener("click", () => toggleAutoDungeon(!autoDungeonActive));
-
+    
+        document.getElementById("automining-toggle-btn")
+            .addEventListener("click", () => toggleAutoMining(!autoMiningActive));
+    
         document.getElementById("autoclicker-interval")
             .addEventListener("change", (e) => {
                 const newInterval = parseInt(e.target.value, 10);
@@ -516,17 +590,15 @@
                     e.target.value = autoClickerOptions.interval;
                 }
             });
-
+    
         document.getElementById("autodungeon-treasure")
             .addEventListener("change", (e) => toggleDungeonTreasurePriority(e.target.checked));
-
-        // Botón de más información
+    
         document.getElementById("more-info-link").addEventListener("click", (e) => {
             e.preventDefault();
             $('#infoModal').modal('show');
         });
-
-        // Crear modal con información adicional (en inglés)
+    
         const infoModal = document.createElement('div');
         infoModal.innerHTML = `
             <div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
@@ -542,6 +614,7 @@
                         <p><strong>Auto Hatchery (H):</strong> It's best to list Pokémon by breeding efficiency, so you hatch the most optimal eggs first.</p>
                         <p><strong>Auto Clicker (C):</strong> We do not recommend decreasing the click interval below 100ms as it may cause performance issues. Keep it at 100ms or above for stability.</p>
                         <p><strong>Auto Dungeon (D):</strong> Prioritizing treasure first can be beneficial, as it often yields extra rewards. Then proceed towards the boss or unexplored areas.</p>
+                        <p><strong>Auto Mining (M):</strong> This feature is to automate the mining process. It will use the Bomb tool on every square in the mine.</p>
                         <p><strong>Additional Tips:</strong><br>
                         - Always ensure you have enough resources before starting these automations.<br>
                         - Monitor performance when lowering intervals or activating multiple features.</p>
@@ -553,7 +626,7 @@
                     </div>
                 </div>
             </div>`;
-
+    
         document.body.appendChild(infoModal);
     }
 
